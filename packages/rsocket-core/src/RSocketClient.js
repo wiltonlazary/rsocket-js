@@ -32,9 +32,10 @@ import invariant from 'fbjs/lib/invariant';
 import {CONNECTION_STREAM_ID, FLAGS, FRAME_TYPES} from './RSocketFrame';
 import {MAJOR_VERSION, MINOR_VERSION} from './RSocketVersion';
 import {createClientMachine} from './RSocketMachine';
-import {Leases} from './RSocketLease';
+import {Lease, Leases} from './RSocketLease';
 import {RequesterLeaseHandler, ResponderLeaseHandler} from './RSocketLease';
 import {IdentitySerializers} from './RSocketSerialization';
+import {ReassemblyDuplexConnection} from './ReassemblyDuplexConnection';
 
 export type ClientConfig<D, M> = {|
   serializers?: PayloadSerializers<D, M>,
@@ -92,7 +93,10 @@ export default class RSocketClient<D, M> {
           if (status.kind === 'CONNECTED') {
             subscription && subscription.cancel();
             subscriber.onComplete(
-              new RSocketClientSocket(this._config, transport),
+              new RSocketClientSocket(
+                this._config,
+                new ReassemblyDuplexConnection(transport),
+              ),
             );
           } else if (status.kind === 'ERROR') {
             subscription && subscription.cancel();
@@ -119,6 +123,7 @@ export default class RSocketClient<D, M> {
     // wrap in try catch since in 'strict' mode the access to an unexciting window will throw
     // the ReferenceError: window is not defined exception
     try {
+      // eslint-disable-next-line no-undef
       const navigator = window && window.navigator;
       if (
         keepAlive > 30000 &&
@@ -150,10 +155,10 @@ class RSocketClientSocket<D, M> implements ReactiveSocket<D, M> {
     const leasesSupplier = config.leases;
     if (leasesSupplier) {
       const lease = leasesSupplier();
-      requesterLeaseHandler = new RequesterLeaseHandler(lease._receiver);
+      requesterLeaseHandler = new RequesterLeaseHandler((lease: any)._receiver);
       responderLeaseHandler = new ResponderLeaseHandler(
-        lease._sender,
-        lease._stats,
+        (lease: any)._sender,
+        (lease: any)._stats,
       );
     }
     const {keepAlive, lifetime} = config.setup;

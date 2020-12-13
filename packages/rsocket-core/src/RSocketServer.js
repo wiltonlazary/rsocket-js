@@ -45,6 +45,7 @@ import {IdentitySerializers} from './RSocketSerialization';
 import {createServerMachine} from './RSocketMachine';
 import {Leases} from './RSocketLease';
 import {RequesterLeaseHandler, ResponderLeaseHandler} from './RSocketLease';
+import {ReassemblyDuplexConnection} from './ReassemblyDuplexConnection';
 
 export interface TransportServer {
   start(): Flowable<DuplexConnection>,
@@ -121,6 +122,7 @@ export default class RSocketServer<D, M> {
   _handleTransportConnection = (connection: DuplexConnection): void => {
     const swapper: SubscriberSwapper<Frame> = new SubscriberSwapper();
     let subscription;
+    connection = new ReassemblyDuplexConnection(connection);
     connection.receive().subscribe(
       swapper.swap({
         onError: error => console.error(error),
@@ -157,11 +159,11 @@ export default class RSocketServer<D, M> {
               if (leasesSupplier) {
                 const lease = leasesSupplier();
                 requesterLeaseHandler = new RequesterLeaseHandler(
-                  lease._receiver,
+                  (lease: any)._receiver,
                 );
                 responderLeaseHandler = new ResponderLeaseHandler(
-                  lease._sender,
-                  lease._stats,
+                  (lease: any)._sender,
+                  (lease: any)._stats,
                 );
               }
               const serverMachine = createServerMachine(
@@ -186,8 +188,8 @@ export default class RSocketServer<D, M> {
                 connection.sendOne({
                   code: ERROR_CODES.REJECTED_SETUP,
                   flags: 0,
-                  message: 'Application rejected setup, reason: ' +
-                    error.message,
+                  message:
+                    'Application rejected setup, reason: ' + error.message,
                   streamId: CONNECTION_STREAM_ID,
                   type: FRAME_TYPES.ERROR,
                 });

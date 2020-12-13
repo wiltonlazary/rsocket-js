@@ -51,7 +51,7 @@ describe('Lite B', () => {
     b.writeUInt8(1, 0);
     b.writeUInt8(2, 1);
     b.writeUInt8(3, 2);
-    const buf2 = B(3);
+    const buf2 = new B(3);
     b.copy(buf2, 0, 1);
     expect(buf2.readUInt8(0)).toEqual(2);
     expect(buf2.readUInt8(1)).toEqual(3);
@@ -70,5 +70,19 @@ describe('Lite B', () => {
 
     expect(buf1.toString('utf8')).toEqual('abcdefghijklmnopqrstuvwxyz');
     expect(B.isBuffer(buf1)).toBe(true);
+  });
+
+  it('supports utf8 write String', () => {
+    const buf1 = new B(26);
+
+    expect(buf1.write('abcdefghijklmnopqrstuvwxyz')).toBe(26);
+    expect(buf1.toString('utf8')).toEqual('abcdefghijklmnopqrstuvwxyz');
+  });
+
+  it('supports utf8 write String with offset', () => {
+    const buf1 = new B(30);
+
+    expect(buf1.write('abcdefghijklmnopqrstuvwxyz', 4)).toBe(26);
+    expect(buf1.toString('utf8', 4)).toEqual('abcdefghijklmnopqrstuvwxyz');
   });
 });
